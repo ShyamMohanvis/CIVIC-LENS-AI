@@ -1,0 +1,10 @@
+fastapi==0.111.0
+uvicorn==0.29.0
+opencv-python==4.9.0.80
+numpy==1.26.4
+python-multipart==0.0.9
+requests==2.32.2
+# Replaced Detectron2 with EfficientNet-B0
+torch>=2.0.0
+torchvision>=0.15.0
+kagglehub>=0.3.0

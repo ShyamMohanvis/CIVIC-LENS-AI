@@ -1,0 +1,6 @@
+encroachment
+garbage
+garbage_dumping
+infrastructure
+pothole
+road_damage

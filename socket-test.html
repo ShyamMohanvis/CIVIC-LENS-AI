@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test - Acknowledgment System</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .connect-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        .send-btn {
+            background: #2196F3;
+            color: white;
+        }
+        .disconnect-btn {
+            background: #f44336;
+            color: white;
+        }
+        #console {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+        }
+        .log {
+            margin: 5px 0;
+        }
+        .success {
+            color: #00ff00;
+        }
+        .error {
+            color: #ff4444;
+        }
+        .info {
+            color: #4fc3f7;
+        }
+        .status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status.connected {
+            background: #00ff00;
+        }
+        .status.disconnected {
+            background: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Socket.IO Acknowledgment System Test</h1>
+        
+        <div class="section">
+            <h2><span class="status" id="status"></span>Connection Status</h2>
+            <p id="statusText">Not Connected</p>
+            <button class="connect-btn" onclick="connectSocket()">Connect to Server</button>
+            <button class="disconnect-btn" onclick="disconnectSocket()">Disconnect</button>
+        </div>
+
+        <div class="section">
+            <h2>📤 Send Test Acknowledgment</h2>
+            <p>This simulates an admin clicking the acknowledge button</p>
+            <button class="send-btn" onclick="sendAcknowledgment()">Send EMERGENCY_ACKNOWLEDGED Event</button>
+        </div>
+
+        <div class="section">
+            <h2>📋 Console Log</h2>
+            <div id="console"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            console.appendChild(logEntry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusElement = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            
+            if (connected) {
+                statusElement.className = 'status connected';
+                statusText.textContent = 'Connected to Socket.IO Server';
+            } else {
+                statusElement.className = 'status disconnected';
+                statusText.textContent = 'Not Connected';
+            }
+        }
+
+        function connectSocket() {
+            if (socket && socket.connected) {
+                log('Already connected!', 'info');
+                return;
+            }
+
+            log('Connecting to http://localhost:5000...', 'info');
+            socket = io('http://localhost:5000');
+
+            socket.on('connect', () => {
+                log('✅ CONNECTED! Socket ID: ' + socket.id, 'success');
+                updateStatus(true);
+            });
+
+            socket.on('disconnect', () => {
+                log('❌ DISCONNECTED', 'error');
+                updateStatus(false);
+            });
+
+            socket.on('EMERGENCY_ACKNOWLEDGED', (data) => {
+                log('📢 RECEIVED EMERGENCY_ACKNOWLEDGED EVENT!', 'success');
+                log('Data: ' + JSON.stringify(data, null, 2), 'info');
+                
+                // Play sound
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+                audio.play().then(() => {
+                    log('🔊 Sound played successfully', 'success');
+                }).catch((e) => {
+                    log('🔇 Sound play failed: ' + e.message, 'error');
+                });
+            });
+
+            socket.on('connect_error', (error) => {
+                log('❌ Connection Error: ' + error.message, 'error');
+            });
+        }
+
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                log('Disconnected manually', 'info');
+            }
+        }
+
+        function sendAcknowledgment() {
+            if (!socket || !socket.connected) {
+                log('❌ Not connected! Connect first.', 'error');
+                return;
+            }
+
+            const testData = {
+                emergencyId: 'test-' + Date.now(),
+                acknowledgedBy: 'Test Admin',
+                timestamp: new Date()
+            };
+
+            log('📤 Sending EMERGENCY_ACKNOWLEDGED event...', 'info');
+            log('Data: ' + JSON.stringify(testData, null, 2), 'info');
+            
+            socket.emit('EMERGENCY_ACKNOWLEDGED', testData);
+            
+            log('✅ Event sent! Check server console for broadcast confirmation.', 'success');
+        }
+
+        // Auto-connect on load
+        window.onload = () => {
+            log('🚀 Socket.IO Test Page Loaded', 'info');
+            log('Click "Connect to Server" to start testing', 'info');
+        };
+    </script>
+</body>
+</html>
