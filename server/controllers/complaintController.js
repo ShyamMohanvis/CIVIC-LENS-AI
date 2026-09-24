@@ -56,7 +56,7 @@ exports.createComplaint = async (req, res) => {
             console.log('📸 Image uploaded & EXIF stripped:', req.file.originalname, `(${(base64Image.length / 1024).toFixed(2)} KB)`);
 
             // Clean up temp file
-            fs.unlinkSync(req.file.path);
+            try { fs.unlinkSync(req.file.path); } catch (e) { console.warn('Could not delete temp file', e.message); }
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -502,7 +502,7 @@ exports.uploadCommunityMedia = async (req, res) => {
         const complaint = await Complaint.findById(id);
 
         if (!complaint) {
-            if (req.file) fs.unlinkSync(req.file.path);
+            if (req.file) { try { fs.unlinkSync(req.file.path); } catch(e) {} }
             return res.status(404).json({ success: false, error: 'Complaint not found' });
         }
 
@@ -521,7 +521,7 @@ exports.uploadCommunityMedia = async (req, res) => {
         const mimeType = 'image/jpeg';
         const mediaUrl = `data:${mimeType};base64,${base64Image}`;
 
-        fs.unlinkSync(req.file.path);
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
 
         // Add to timeline explicitly flagged as unverified community contribution.
         // Does NOT re-trigger detectron or update the complaint's main category.
@@ -546,7 +546,7 @@ exports.uploadCommunityMedia = async (req, res) => {
         res.status(201).json({ success: true, message: 'Community media added successfully.' });
 
     } catch (error) {
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        if (req.file && fs.existsSync(req.file.path)) { try { fs.unlinkSync(req.file.path); } catch(e) {} }
         console.error('Community media upload error:', error);
         res.status(500).json({ success: false, error: 'Server Error' });
     }
